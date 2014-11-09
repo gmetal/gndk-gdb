@@ -120,6 +120,7 @@ DELAY = 2.0
 NDK = os.path.abspath(os.path.dirname(sys.argv[0])).replace('\\','/')
 DEVICE_SERIAL = ''
 ADB_FLAGS = ''
+TRUE_PACKAGE_NAME = None
 
 def log(string):
     global VERBOSE
@@ -135,7 +136,7 @@ def handle_args():
     global GNUMAKE_CMD, GNUMAKE_FLAGS
     global ADB_CMD, ADB_FLAGS
     global JDB_CMD
-    global PROJECT, NDK
+    global PROJECT, NDK, TRUE_PACKAGE_NAME
     global OPTION_START, OPTION_LAUNCH, OPTION_LAUNCH_LIST
     global OPTION_FORCE, OPTION_EXEC, OPTION_TUI, OPTION_WAIT
     global OPTION_STDCXXPYPR
@@ -151,6 +152,9 @@ Read ''' + NDK + '''/docs/NDK-GDB.html for complete usage instructions.''',
 
     parser.add_argument('--ndk',
                         help='The path to the NDK', dest='ndk')
+
+    parser.add_argument('--true_package_name',
+                        help='The name of the package to launch', dest='true_package_name')
 
     parser.add_argument( '--force',
                          help='Kill existing debug session if it exists',
@@ -272,6 +276,9 @@ Read ''' + NDK + '''/docs/NDK-GDB.html for complete usage instructions.''',
 
     if args.ndk != None:
         NDK = args.ndk
+
+    if args.true_package_name != None:
+        TRUE_PACKAGE_NAME = args.true_package_name
 
     if args.start != None:
         OPTION_START = args.start
@@ -478,10 +485,15 @@ def extract_package_name(xmlfile):
     The name itself is the value of the 'package' attribute in the
     'manifest' element.
     '''
-    tree = ElementTree.ElementTree(file=xmlfile)
-    root = tree.getroot()
-    if 'package' in root.attrib:
-        return root.attrib['package']
+    global TRUE_PACKAGE_NAME
+
+    if TRUE_PACKAGE_NAME:
+        return TRUE_PACKAGE_NAME
+    else:
+        tree = ElementTree.ElementTree(file=xmlfile)
+        root = tree.getroot()
+        if 'package' in root.attrib:
+            return root.attrib['package']
     return None
 
 def extract_debuggable(xmlfile):
@@ -531,7 +543,7 @@ def extract_launchable(xmlfile):
     return launchable_activities
 
 def main():
-    global ADB_CMD, NDK, PROJECT
+    global ADB_CMD, NDK, PROJECT, TRUE_PACKAGE_NAME
     global JDB_CMD
     global OPTION_STAfRT, OPTION_LAUNCH, OPTION_LAUNCH_LIST
     global OPTION_FORCE, OPTION_EXEC, OPTION_TUI, OPTION_WAIT
