@@ -317,7 +317,9 @@ def get_build_var(var):
     # replace('\r', '') due to Windows crlf (\r\n)
     #  ...universal_newlines=True causes bytes to be returned
     #     rather than a str
-    return text.decode('ascii').replace('\r', '').splitlines()[0]
+
+    lines = [l for l in text.decode('ascii').replace('\r', '').splitlines()  if l.find("Android NDK: WARNING") == -1 ]
+    return lines[0]
 
 def get_build_var_for_abi(var, abi):
     global GNUMAKE_CMD, GNUMAKE_FLAGS, NDK, PROJECT
