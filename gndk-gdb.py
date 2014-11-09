@@ -311,6 +311,9 @@ Read ''' + NDK + '''/docs/NDK-GDB.html for complete usage instructions.''',
 
     OPTION_STDCXXPYPR = args.stdcxxpypr
 
+def __remove_ndk_warnings(buf):
+    return [l for l in buf.decode('ascii').replace('\r', '').splitlines()  if l.find("Android NDK: WARNING") == -1 ]
+
 def get_build_var(var):
     global GNUMAKE_CMD, GNUMAKE_FLAGS, NDK, PROJECT
     text = subprocess.check_output([GNUMAKE_CMD,
@@ -325,8 +328,7 @@ def get_build_var(var):
     #  ...universal_newlines=True causes bytes to be returned
     #     rather than a str
 
-    lines = [l for l in text.decode('ascii').replace('\r', '').splitlines()  if l.find("Android NDK: WARNING") == -1 ]
-    return lines[0]
+    return __remove_ndk_warnings(text)[0]
 
 def get_build_var_for_abi(var, abi):
     global GNUMAKE_CMD, GNUMAKE_FLAGS, NDK, PROJECT
@@ -339,7 +341,7 @@ def get_build_var_for_abi(var, abi):
                                    'DUMP_'+var,
                                    'APP_ABI='+abi] + GNUMAKE_FLAGS,
                                    )
-    return text.decode('ascii').replace('\r', '').splitlines()[0]
+    return __remove_ndk_warnings(text)[0]
 
 # Silent if gdb is running in tui mode to keep things tidy.
 def output_gdbserver(text):
@@ -814,7 +816,12 @@ After one of these, re-install to the device!''' % (PACKAGE_NAME))
     #
     GDBCLIENT = '%sgdb' % (TOOLCHAIN_PREFIX)
     GDBSETUP = '%s/gdb.setup' % (APP_OUT)
-    shutil.copyfile(GDBSETUP_INIT, GDBSETUP)
+
+    if PROJECT:
+        shutil.copyfile("%s/%s" % (PROJECT, GDBSETUP_INIT), GDBSETUP)
+    else:
+        shutil.copyfile(GDBSETUP_INIT, GDBSETUP)
+
     with open(GDBSETUP, "a") as gdbsetup:
         #uncomment the following to debug the remote connection only
         #gdbsetup.write('set debug remote 1\n')
