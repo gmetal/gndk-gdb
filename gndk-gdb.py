@@ -90,6 +90,7 @@ PROJECT = None
 ADB_CMD = None
 GNUMAKE_CMD = None
 JDB_CMD = None
+IGNORE_DEBUGGABLE = False
 # Extra arguments passed to the NDK build system when
 # querying it.
 GNUMAKE_FLAGS = []
@@ -136,6 +137,7 @@ def handle_args():
     global GNUMAKE_CMD, GNUMAKE_FLAGS
     global ADB_CMD, ADB_FLAGS
     global JDB_CMD
+    global IGNORE_DEBUGGABLE
     global PROJECT, NDK, TRUE_PACKAGE_NAME
     global OPTION_START, OPTION_LAUNCH, OPTION_LAUNCH_LIST
     global OPTION_FORCE, OPTION_EXEC, OPTION_TUI, OPTION_WAIT
@@ -155,6 +157,9 @@ Read ''' + NDK + '''/docs/NDK-GDB.html for complete usage instructions.''',
 
     parser.add_argument('--true_package_name',
                         help='The name of the package to launch', dest='true_package_name')
+
+    parser.add_argument('--ignore_debuggable',
+                        help='The name of the package to launch', dest='ignore_debuggable', action='store_true')
 
     parser.add_argument( '--force',
                          help='Kill existing debug session if it exists',
@@ -237,6 +242,7 @@ Read ''' + NDK + '''/docs/NDK-GDB.html for complete usage instructions.''',
     args = parser.parse_args()
 
     VERBOSE = args.verbose
+    IGNORE_DEBUGGABLE = args.ignore_debuggable
 
     ndk_bin = ndk_bin_path(NDK)
     (found_adb,     ADB_CMD)     = find_program('adb',    [ndk_bin])
@@ -551,6 +557,7 @@ def main():
     global OPTION_FORCE, OPTION_EXEC, OPTION_TUI, OPTION_WAIT
     global OPTION_STDCXXPYPR
     global PYPRPR_BASE, PYPRPR_GNUSTDCXX_BASE
+    global IGNORE_DEBUGGABLE
 
     if NDK.find(' ')!=-1:
         error('NDK path cannot contain space')
@@ -644,10 +651,12 @@ The target device is running API level %d!''' % (API_LEVEL))
 
     TOOLCHAIN_PREFIX = get_build_var_for_abi('TOOLCHAIN_PREFIX', COMPAT_ABI)
     log('Using toolchain prefix: %s' % (TOOLCHAIN_PREFIX))
-
+ 
     APP_OUT = get_build_var_for_abi('TARGET_OUT', COMPAT_ABI)
+    if PROJECT:
+        APP_OUT = "%s/%s" % (PROJECT, APP_OUT)
     log('Using app out directory: %s' % (APP_OUT))
-    DEBUGGABLE = extract_debuggable(PROJECT+os.sep+MANIFEST)
+    DEBUGGABLE = extract_debuggable(PROJECT+os.sep+MANIFEST) if not(IGNORE_DEBUGGABLE) else True
     log('Found debuggable flag: %s' % ('true' if DEBUGGABLE==True else 'false'))
     # If gdbserver exists, then we built with 'ndk-build NDK_DEBUG=1' and it's
     # ok to not have android:debuggable set to true in the original manifest.
@@ -683,7 +692,12 @@ After one of these, re-install to the device!''' % (PACKAGE_NAME))
     log('Found device gdbserver: %s' % (DEVICE_GDBSERVER))
 
     # Find the <dataDir> of the package on the device
-    retcode,DATA_DIR = adb_var_shell2(['run-as', PACKAGE_NAME, '/system/bin/sh', '-c', 'pwd'])
+    if TRUE_PACKAGE_NAME:
+        retcode = None
+        DATA_DIR = '/data/data/%s' % (TRUE_PACKAGE_NAME)
+    else:
+        retcode,DATA_DIR = adb_var_shell2(['run-as', PACKAGE_NAME, '/system/bin/sh', '-c', 'pwd'], log_command=True)
+
     if retcode or DATA_DIR == '':
         error('''Could not extract package's data directory. Are you sure that
        your installed application is debuggable?''')

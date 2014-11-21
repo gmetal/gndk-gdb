@@ -1,6 +1,6 @@
 #!/bin/sh
 
-PROGDIR=`dirname $0`
+PROGDIR=$NDK
 PROGDIR=`cd $PROGDIR && pwd -P`
 
 # Check if absolute NDK path contain space
@@ -14,4 +14,4 @@ esac
 . $PROGDIR/build/tools/ndk-common.sh
 
 # -u means unbuffered standard io.
-$PROGDIR/prebuilt/$HOST_TAG/bin/python -u $PROGDIR/ndk-gdb.py "$@"
+$PROGDIR/prebuilt/$HOST_TAG/bin/python -u gndk-gdb.py "$@"
