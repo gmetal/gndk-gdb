@@ -1,5 +1,6 @@
 #!/bin/sh
 
+GNDK_DIR=$(dirname $0)
 PROGDIR=$NDK
 PROGDIR=`cd $PROGDIR && pwd -P`
 
@@ -14,4 +15,4 @@ esac
 . $PROGDIR/build/tools/ndk-common.sh
 
 # -u means unbuffered standard io.
-$PROGDIR/prebuilt/$HOST_TAG/bin/python -u gndk-gdb.py "$@"
+$PROGDIR/prebuilt/$HOST_TAG/bin/python -u $GNDK_DIR/gndk-gdb.py "$@"
